@@ -41,10 +41,17 @@ public class ShiroConfig {
         shiroFilter.setFilters(filters);
 
         Map<String, String> filterMap = new LinkedHashMap<>(8);
+        // 允许跨域请求的OPTIONS请求
+        filterMap.put("/**/options", "anon");
+        // 登录接口
         filterMap.put("/sys/login", "anon");
+        // 系统接口
         filterMap.put("/sys/**", "oauth2");
+        // 管理接口
         filterMap.put("/manage/**", "oauth2");
+        // 微信接口
         filterMap.put("/wx/**", "anon");
+        // 其他接口
         filterMap.put("/**", "anon");
         shiroFilter.setFilterChainDefinitionMap(filterMap);
 
