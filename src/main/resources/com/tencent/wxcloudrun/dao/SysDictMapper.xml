@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.wxcloudrun.dao.SysDictMapper">
+    <resultMap id="BaseResultMap" type="com.tencent.wxcloudrun.model.SysDict">
+        <id column="id" property="id"/>
+        <result column="dict_name" property="dictName"/>
+        <result column="dict_code" property="dictCode"/>
+        <result column="dict_value" property="dictValue"/>
+        <result column="dict_sort" property="dictSort"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="getDictList" resultMap="BaseResultMap">
+        SELECT * FROM sys_dict
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (dict_name LIKE CONCAT('%', #{keyword}, '%')
+                OR dict_code LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY dict_sort ASC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="getDictCount" resultType="long">
+        SELECT COUNT(*) FROM sys_dict
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (dict_name LIKE CONCAT('%', #{keyword}, '%')
+                OR dict_code LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="getDictById" resultMap="BaseResultMap">
+        SELECT * FROM sys_dict WHERE id = #{id}
+    </select>
+
+    <insert id="addDict" parameterType="com.tencent.wxcloudrun.model.SysDict">
+        INSERT INTO sys_dict
+        (dict_name, dict_code, dict_value, dict_sort, status, create_time, update_time)
+        VALUES
+        (#{dictName}, #{dictCode}, #{dictValue}, #{dictSort}, #{status}, NOW(), NOW())
+    </insert>
+
+    <update id="updateDict" parameterType="com.tencent.wxcloudrun.model.SysDict">
+        UPDATE sys_dict
+        SET dict_name = #{dictName},
+            dict_code = #{dictCode},
+            dict_value = #{dictValue},
+            dict_sort = #{dictSort},
+            status = #{status},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteDict">
+        DELETE FROM sys_dict WHERE id = #{id}
+    </delete>
+</mapper> 
