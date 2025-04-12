@@ -19,32 +19,41 @@ public class CorsConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         
-        // 允许跨域的域名，设置为 * 时不能同时设置 allowCredentials 为 true
-        // 如果需要允许携带认证信息，这里必须指定具体的域名
+        // 允许跨域的域名
         config.setAllowedOriginPatterns(Arrays.asList("*"));
         
         // 允许跨域的请求头
-        config.addAllowedHeader("*");
+        config.setAllowedHeaders(Arrays.asList(
+            "Origin",
+            "Content-Type",
+            "Accept",
+            "Authorization",
+            "X-Requested-With",
+            "Access-Control-Request-Method",
+            "Access-Control-Request-Headers"
+        ));
         
         // 允许跨域的请求方法
-        config.addAllowedMethod("*");
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         
-        // 允许携带认证信息（cookie等）
+        // 允许携带认证信息
         config.setAllowCredentials(true);
         
         // 预检请求的有效期，单位为秒
         config.setMaxAge(3600L);
         
         // 允许返回的响应头
-        config.addExposedHeader("Authorization");
-        config.addExposedHeader("Content-Type");
-        config.addExposedHeader("X-Requested-With");
-        config.addExposedHeader("Access-Control-Allow-Origin");
-        config.addExposedHeader("Access-Control-Allow-Credentials");
-        config.addExposedHeader("Access-Control-Allow-Headers");
-        config.addExposedHeader("Access-Control-Allow-Methods");
-        config.addExposedHeader("Access-Control-Max-Age");
-        config.addExposedHeader("Access-Control-Expose-Headers");
+        config.setExposedHeaders(Arrays.asList(
+            "Authorization",
+            "Content-Type",
+            "X-Requested-With",
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Credentials",
+            "Access-Control-Allow-Headers",
+            "Access-Control-Allow-Methods",
+            "Access-Control-Max-Age",
+            "Access-Control-Expose-Headers"
+        ));
         
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
