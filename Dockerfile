@@ -1,45 +1,46 @@
-# 二开推荐阅读[如何提高项目构建效率](https://developers.weixin.qq.com/miniprogram/dev/wxcloudrun/src/scene/build/speed.html)
-# 选择构建用基础镜像。如需更换，请到[dockerhub官方仓库](https://hub.docker.com/_/java?tab=tags)自行选择后替换。
+# -------------------------- 构建阶段 --------------------------
+# 使用国内镜像源加速构建（可选）
 FROM maven:3.6.0-jdk-8 as build
-# 指定构建过程中的工作目录
+
+# 设置构建阶段工作目录
 WORKDIR /app
 
-# 将src目录下所有文件，拷贝到工作目录中src目录下（.gitignore/.dockerignore中文件除外）
-COPY src /app/src
+# 先单独复制 pom.xml 和 settings.xml 利用缓存（避免代码变动时重复下载依赖）
+COPY settings.xml pom.xml ./
 
-# 将pom.xml文件，拷贝到工作目录下
-COPY settings.xml pom.xml /app/
+# 预下载依赖（利用 Docker 层缓存加速构建）
+RUN mvn -s /app/settings.xml dependency:go-offline
 
-# 执行代码编译命令
-# 自定义settings.xml, 选用国内镜像源以提高下载速度
-RUN mvn -s /app/settings.xml -f /app/pom.xml clean package
+# 复制源代码（此步骤变动频繁，放在后面减少缓存失效）
+COPY src ./src
 
-# 选择运行时基础镜像
-FROM alpine:3.13
+# 执行构建（跳过测试）
+RUN mvn -s /app/settings.xml clean package -DskipTests
 
-# 安装依赖包，如需其他依赖包，请到alpine依赖包管理(https://pkgs.alpinelinux.org/packages?name=php8*imagick*&branch=v3.13)查找。
-# 选用国内镜像源以提高下载速度
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tencent.com/g' /etc/apk/repositories \
-    && apk add --update --no-cache openjdk8-jre-base \
-    && rm -f /var/cache/apk/*
+# -------------------------- 运行时阶段 --------------------------
+# 改用更稳定的 Eclipse Temurin 镜像（自带完整字体库）
+FROM eclipse-temurin:8-jre
 
-# 容器默认时区为UTC，如需使用上海时间请启用以下时区设置命令
-# RUN apk add tzdata && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo Asia/Shanghai > /etc/timezone
+# 设置容器时区为上海（取消注释并修正）
+RUN apt-get update && \
+    apt-get install -y tzdata && \
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone && \
+    rm -rf /var/lib/apt/lists/*
 
-# 使用 HTTPS 协议访问容器云调用证书安装
-RUN apk add ca-certificates
+# 安装字体依赖（Alpine 镜像此处需特殊处理，改用 Debian 系镜像更简单）
+RUN apt-get update && \
+    apt-get install -y fontconfig libfreetype6 && \
+    rm -rf /var/lib/apt/lists/*
 
-# 指定运行时的工作目录
+# 设置工作目录
 WORKDIR /app
 
-# 将构建产物jar包拷贝到运行时目录中
-COPY --from=build /app/target/*.jar .
+# 从构建阶段复制 JAR 文件（明确指定文件名避免通配符问题）
+COPY --from=build /app/target/springboot-wxcloudrun-1.0.jar .
 
 # 暴露端口
-# 此处端口必须与「服务设置」-「流水线」以及「手动上传代码包」部署时填写的端口一致，否则会部署失败。
 EXPOSE 80
 
-# 执行启动命令.
-# 写多行独立的CMD命令是错误写法！只有最后一行CMD命令会被执行，之前的都会被忽略，导致业务报错。
-# 请参考[Docker官方文档之CMD命令](https://docs.docker.com/engine/reference/builder/#cmd)
-CMD ["java", "-jar", "/app/springboot-wxcloudrun-1.0.jar"]
+# 启动命令（建议增加 JVM 参数优化）
+CMD ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/app/springboot-wxcloudrun-1.0.jar"]
