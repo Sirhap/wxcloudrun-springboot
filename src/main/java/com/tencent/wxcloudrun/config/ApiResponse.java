@@ -2,30 +2,28 @@ package com.tencent.wxcloudrun.config;
 
 import lombok.Data;
 
-import java.util.HashMap;
-
 @Data
-public final class ApiResponse {
+public class ApiResponse<T> {
+    private Integer code;
+    private String message;
+    private T data; 
 
-  private Integer code;
-  private String errorMsg;
-  private Object data;
+    public static <T> ApiResponse<T> ok() {
+        return ok(null);
+    }
 
-  private ApiResponse(int code, String errorMsg, Object data) {
-    this.code = code;
-    this.errorMsg = errorMsg;
-    this.data = data;
-  }
-  
-  public static ApiResponse ok() {
-    return new ApiResponse(0, "", new HashMap<>());
-  }
+    public static <T> ApiResponse<T> ok(T data) {
+        ApiResponse<T> response = new ApiResponse<>();
+        response.setCode(0);
+        response.setMessage("success");
+        response.setData(data);
+        return response;
+    }
 
-  public static ApiResponse ok(Object data) {
-    return new ApiResponse(0, "", data);
-  }
-
-  public static ApiResponse error(String errorMsg) {
-    return new ApiResponse(0, errorMsg, new HashMap<>());
-  }
+    public static <T> ApiResponse<T> error(String message) {
+        ApiResponse<T> response = new ApiResponse<>();
+        response.setCode(1);
+        response.setMessage(message);
+        return response;
+    }
 }
